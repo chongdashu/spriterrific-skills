@@ -71,7 +71,7 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
 | `actionContext` | `--action-context` | Extra prose for action prompts (props, pose semantics). ≤1000 chars. |
 | `chroma` | `--chroma` | Matte color, default `#00FF00`. |
 | `kColors` | `--k-colors` | Palette quantization, 2–256 (default 256). |
-| `actionModes` | `--mode` per action | e.g. `{ "walk": "video", "idle": "image" }`; omit for per-action engine defaults. |
+| `actionModes` | `--mode` per action | Hosted default is `"video"` for **every** action; omit the field unless the user explicitly wants an action on the image path, e.g. `{ "idle": "image" }`. |
 | `imageModelAlias` / `videoModelAlias` | `--image-model` / `--video-model` | Only when the user explicitly wants a model comparison. |
 
 ## Choosing Parameters: the Output Mode Gate
@@ -102,8 +102,9 @@ Other carried-over judgment:
   blindly.
 - **Idle drift**: demand a closed loop in `actionContext` ("exact start pose
   and exact return to the same start pose for a clean loop; no stepping, no
-  foot lift"), or force `actionModes: { "idle": "image" }` which cannot
-  travel.
+  foot lift"). As a last resort, `actionModes: { "idle": "image" }` cannot
+  travel — but image mode is an opt-in anti-drift tactic, not the default;
+  hosted actions run in video mode unless you set `"image"` explicitly.
 - **Adventure characters**: `gameView: "adventure"`, `direction: "sw"`.
 - **Model choices**: hosted defaults (nano-banana-2-lite image,
   grok-imagine-video-i2v video) are deliberate; only override aliases for an
@@ -146,7 +147,20 @@ Don't make them wait blind through a multi-minute job.
 
 Jobs take minutes (one provider generation per anchor step and per action),
 so poll patiently — don't tight-loop. A `progress` object on the job shows
-the current step and index/total while running.
+the current step and index/total while running (it may be `null` once the
+job finishes — rely on `status` and `steps`, not `progress`).
+
+**Response envelope:** `GET /api/v1/jobs/{jobId}` wraps everything under a
+top-level `"job"` key — there is no top-level `status`:
+
+```json
+{ "job": { "id": "...", "status": "partial", "steps": [...], "artifacts": [...] } }
+```
+
+Always read `payload["job"]["status"]`, `["job"]["steps"]`,
+`["job"]["artifacts"]`, and `["job"]["creditsDebited"]` /
+`["job"]["creditsRefunded"]`. Reading top-level `status` returns nothing and
+makes a poller loop forever past a finished job.
 
 ## Save Artifacts Locally (required)
 
@@ -179,6 +193,11 @@ curl -s -o "$RUN_DIR/walk/manifest.json"   "<walk/manifest url>"
 curl -s -o "$RUN_DIR/anchor-w.png"         "<anchors/anchor-w url>"
 ```
 
+Download with `curl` — plain `urllib.request` (default Python User-Agent)
+can get `403` from the public R2 URLs even though `curl` succeeds. If you
+must use Python, send a browser-like `User-Agent` header or shell out to
+curl.
+
 Save `job.json` too so the run is reproducible (job id, parameters, steps,
 costs). Skip the bulky extras (`raw-video`, `contact`, `run-index`) unless
 the user wants to re-pick frames later — mention they exist and where.
@@ -202,6 +221,9 @@ spritesheet, GIF, and raw video.
   run tree).
 - `creditsDebited` / `creditsRefunded` on the job tell the user the true
   spend.
+- When the user asks *which model actually ran*, don't guess from this skill:
+  fetch the job's `costs` artifact (and `run-index` if needed) — they record
+  the real `modelAlias`, `endpointId`, and mode per generation.
 
 ## Anti-Patterns
 
