@@ -18,7 +18,34 @@ project, give your agent an API key, and prompt it to generate sprites.
 
 ### 1. Install the skill into your project
 
-From your project root:
+Pick whichever suits you:
+
+**Option A — download the zip.** Grab
+[`spriterrific-api-skill.zip`](https://github.com/chongdashu/spriterrific-skills/releases/latest/download/spriterrific-api-skill.zip)
+from the latest release and unzip it at your project root. It installs the
+skill under both `.claude/skills/` and `.agents/skills/`:
+
+```bash
+curl -fsSL -o spriterrific-api-skill.zip \
+  https://github.com/chongdashu/spriterrific-skills/releases/latest/download/spriterrific-api-skill.zip
+unzip -o spriterrific-api-skill.zip && rm spriterrific-api-skill.zip
+```
+
+**Option B — let your agent do it.** Paste this to your coding agent:
+
+```text
+Install the Spriterrific API agent skill into this project.
+
+1. Fetch https://raw.githubusercontent.com/chongdashu/spriterrific-skills/main/skills/spriterrific-api/SKILL.md
+2. Save it to .claude/skills/spriterrific-api/SKILL.md and
+   .agents/skills/spriterrific-api/SKILL.md, creating directories as needed.
+   If this project keeps agent skills elsewhere (e.g. .cursor/skills/ or
+   .codex/skills/), install it there too.
+3. Confirm the files exist, then read the skill and summarize what it can do
+   and what it needs from me.
+```
+
+**Option C — manual.** From your project root:
 
 ```bash
 mkdir -p .claude/skills/spriterrific-api && \
@@ -26,8 +53,8 @@ curl -fsSL https://raw.githubusercontent.com/chongdashu/spriterrific-skills/main
   -o .claude/skills/spriterrific-api/SKILL.md
 ```
 
-Using Cursor or Codex instead of Claude Code? Install to `.cursor/skills/`
-or `.codex/skills/` (or `.agents/skills/`) — same file, same path shape.
+Repeat with `.agents/skills/` (or `.cursor/skills/`, `.codex/skills/`) if
+your agent reads skills from a different directory.
 
 ### 2. Get an API key
 
