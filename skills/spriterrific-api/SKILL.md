@@ -105,6 +105,11 @@ Other carried-over judgment:
   foot lift"). As a last resort, `actionModes: { "idle": "image" }` cannot
   travel — but image mode is an opt-in anti-drift tactic, not the default;
   hosted actions run in video mode unless you set `"image"` explicitly.
+- **Video prompt cap**: hosted actions run in video mode, and the
+  grok-imagine-video-i2v prompt cap is 4096 characters. Some action prompts
+  (idle especially) sit near that cap already, so keep `actionContext`
+  short — roughly 100 characters is safe, ~150+ can overflow. A prompt-cap
+  failure is refunded; shorten the context and retry.
 - **Adventure characters**: `gameView: "adventure"`, `direction: "sw"`.
 - **Model choices**: hosted defaults (nano-banana-2-lite image,
   grok-imagine-video-i2v video) are deliberate; only override aliases for an

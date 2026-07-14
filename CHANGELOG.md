@@ -25,6 +25,9 @@ app.spriterrific.com download button — serves.
   artifact URLs; default-User-Agent Python `urllib` can 403) and a
   debugging note (fetch the `costs` / `run-index` artifacts to report which
   model actually ran).
+- `spriterrific-api`: warned that video prompts have a 4096-character model
+  cap — keep `actionContext` short (~100 chars) or the generation fails
+  (refunded) with a prompt-too-long error.
 
 ## [1.0.1] - 2026-07-14
 
