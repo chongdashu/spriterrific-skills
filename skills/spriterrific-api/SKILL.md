@@ -130,13 +130,19 @@ curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
     "actionContext": "keeps the wooden sword in the right paw at all times"
   }' "$BASE/api/v1/jobs"
 
-# 3. Poll every ~15s until status is terminal
-#    (completed | partial | failed | canceled).
+# 3. Share the live run page with the user, then poll every ~15s until
+#    status is terminal (completed | partial | failed | canceled).
+echo "Watch live: https://app.spriterrific.com/jobs/$JOB_ID"
 curl -s -H "$AUTH" "$BASE/api/v1/jobs/$JOB_ID"
 
 # 4. Download artifacts by their `url` field into the local run folder
 #    (see "Save Artifacts Locally" below).
 ```
+
+As soon as the enqueue returns a `jobId`, give the user the run's live page
+— `https://app.spriterrific.com/jobs/<jobId>` — so they can watch
+step-by-step progress and artifact previews in the browser while you poll.
+Don't make them wait blind through a multi-minute job.
 
 Jobs take minutes (one provider generation per anchor step and per action),
 so poll patiently — don't tight-loop. A `progress` object on the job shows
