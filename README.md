@@ -80,6 +80,7 @@ into `spriterrific-runs/` in your project. Every run also gets a web page at
 
 ## Links
 
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
 - Web app: [app.spriterrific.com](https://app.spriterrific.com)
 - Website: [spriterrific.com](https://www.spriterrific.com)
 - Python CLI/engine: [github.com/chongdashu/spriterrific-public](https://github.com/chongdashu/spriterrific-public)
