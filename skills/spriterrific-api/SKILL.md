@@ -226,6 +226,10 @@ spritesheet, GIF, and raw video.
   run tree).
 - `creditsDebited` / `creditsRefunded` on the job tell the user the true
   spend.
+- `engineVersion` / `workerVersion` on a finished job record which
+  spriterrific engine and worker versions ran it (`null` on jobs from before
+  version tracking). Quote `engineVersion` when reporting or comparing run
+  quality — behavior changes ship as engine releases.
 - When the user asks *which model actually ran*, don't guess from this skill:
   fetch the job's `costs` artifact (and `run-index` if needed) — they record
   the real `modelAlias`, `endpointId`, and mode per generation.
