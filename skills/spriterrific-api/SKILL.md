@@ -1,6 +1,6 @@
 ---
 name: spriterrific-api
-description: "Drive the hosted Spriterrific HTTP API from any agent or project: enqueue character/action sprite-generation jobs with CLI-equivalent parameters, poll job status, download spritesheet artifacts, and manage credits. Use when the user wants hosted/cloud sprite generation via API key instead of the local CLI."
+description: "Drive the hosted Spriterrific HTTP API from any agent or project: enqueue character/action sprite-generation jobs with CLI-equivalent parameters, poll job status, re-pick spritesheet frames (Studio frame-picker equivalent), download artifacts, and manage credits. Use when the user wants hosted/cloud sprite generation via API key instead of the local CLI."
 metadata:
   short-description: "Hosted Spriterrific generation via HTTP API."
 ---
@@ -45,6 +45,11 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
 | `POST /api/v1/jobs` | Enqueue a job. `201` → `{ jobId, credits }`. `400` validation, `401` bad key, `402` not enough credits. |
 | `GET /api/v1/jobs?limit=25` | List the key owner's jobs, newest first. |
 | `GET /api/v1/jobs/{jobId}` | One job: status, per-step outcomes, warnings, artifacts with download `url`s. |
+| `GET /api/v1/jobs/{jobId}/actions/{action}/frames` | Dense-frame thumbnails for the frame picker (`ready` / `not_extracted` / `extracting`). |
+| `POST /api/v1/jobs/{jobId}/actions/{action}/frames/extract` | Prepare dense-frame thumbnails from archived raw video (**0 credits**). |
+| `POST /api/v1/jobs/{jobId}/actions/{action}/picks` | Create a new spritesheet version from selected frames (**0 credits**). |
+| `GET /api/v1/jobs/{jobId}/actions/{action}/picks` | List spritesheet versions (`v1` original, `v2+` picks) with artifact URLs. |
+| `POST /api/v1/jobs/{jobId}/actions/{action}/picks/{version}/activate` | Make a version the default `<action>/spritesheet` (metadata only; R2 immutable). |
 
 ## Job Types
 
@@ -54,6 +59,10 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
 - **`action`**: one extra animation reusing the anchor of a previous
   completed character job (`referenceJobId`). Cheaper than re-running the
   whole character. Use it to add animations later or retry a bad one.
+- **`frame_extract` / `frame_pick`** (curation, auto-enqueued): zero-credit
+  worker jobs that re-extract dense frames from archived raw video and
+  rebuild a spritesheet. You do not enqueue these via `POST /api/v1/jobs` —
+  use the `/frames` and `/picks` routes below.
 
 ## Request Parameters (CLI parity)
 
@@ -143,12 +152,16 @@ curl -s -H "$AUTH" "$BASE/api/v1/jobs/$JOB_ID"
 
 # 4. Download artifacts by their `url` field into the local run folder
 #    (see "Save Artifacts Locally" below).
+
+# 5. (Optional) Re-pick frames if the auto-selection looks wrong — see
+#    "Frame Picker" below. Free; no fal.ai cost.
 ```
 
 As soon as the enqueue returns a `jobId`, give the user the run's live page
 — `https://app.spriterrific.com/jobs/<jobId>` — so they can watch
 step-by-step progress and artifact previews in the browser while you poll.
-Don't make them wait blind through a multi-minute job.
+Don't make them wait blind through a multi-minute job. The run page also
+hosts the interactive frame picker once an action finishes.
 
 Jobs take minutes (one provider generation per anchor step and per action),
 so poll patiently — don't tight-loop. A `progress` object on the job shows
@@ -166,6 +179,56 @@ Always read `payload["job"]["status"]`, `["job"]["steps"]`,
 `["job"]["artifacts"]`, and `["job"]["creditsDebited"]` /
 `["job"]["creditsRefunded"]`. Reading top-level `status` returns nothing and
 makes a poller loop forever past a finished job.
+
+## Frame Picker (Studio / CLI equivalent, 0 credits)
+
+Hosted video actions keep the archived provider MP4 (`<action>/raw-video`)
+and a contact sheet (`<action>/contact`). Newer jobs also upload dense-frame
+thumbnails (`<action>/frames-index`). Use these when the auto-selected
+spritesheet looks wrong (bad timing, missing pose, uneven spacing) instead
+of re-rolling the whole video generation.
+
+This is the API analogue of Studio's Frames tab and CLI
+`frame-picker` + `process-selection`. Versions are immutable in R2;
+**activate** only rewrites the source job's artifact *names* so
+`<action>/spritesheet` etc. point at the active version.
+
+```bash
+ACTION=walk
+
+# Inspect whether dense frames are ready.
+curl -s -H "$AUTH" "$BASE/api/v1/jobs/$JOB_ID/actions/$ACTION/frames"
+# If status is "not_extracted":
+curl -s -X POST -H "$AUTH" \
+  "$BASE/api/v1/jobs/$JOB_ID/actions/$ACTION/frames/extract"
+# Poll the returned extract jobId, then GET …/frames again.
+
+# Create v2 from chosen dense frame names (from the frames list).
+curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+  -d '{
+    "frames": ["frame-0002.png","frame-0008.png","frame-0014.png","frame-0020.png","frame-0026.png","frame-0032.png","frame-0038.png","frame-0044.png"],
+    "fps": 10
+  }' "$BASE/api/v1/jobs/$JOB_ID/actions/$ACTION/picks"
+# → { "pickJobId": "...", "version": 2 }
+# Poll GET /api/v1/jobs/$PICK_JOB_ID until completed.
+
+curl -s -H "$AUTH" "$BASE/api/v1/jobs/$JOB_ID/actions/$ACTION/picks"
+curl -s -X POST -H "$AUTH" \
+  "$BASE/api/v1/jobs/$JOB_ID/actions/$ACTION/picks/2/activate"
+
+# Canonical artifact names now point at v2 — re-download spritesheet/preview.
+curl -s -H "$AUTH" "$BASE/api/v1/jobs/$JOB_ID"
+```
+
+Judgment tips (same as Studio):
+
+- Prefer even spacing between a clear start pose and end pose for loops.
+- Keep frame counts near the action preset (often 6–8); extremes look choppy
+  or wasteful.
+- After activate, always re-fetch `GET /api/v1/jobs/{jobId}` before
+  downloading — the `url`s on `<action>/spritesheet` change.
+- Older jobs without `<action>/raw-video` return `unavailable`; tell the user
+  to regenerate that action if they need the picker.
 
 ## Save Artifacts Locally (required)
 
@@ -221,9 +284,10 @@ spritesheet, GIF, and raw video.
   contract). Surface them; don't silently ignore.
 - Key artifact names: `anchors/anchor-<direction>` (the canonical anchor),
   `<action>/spritesheet` (256×256-cell runtime sheet), `<action>/preview`
-  (GIF), `<action>/manifest` (frame metadata JSON), `<action>/raw-video`
-  (provider video, useful for future re-picks), `run-index` (full archived
-  run tree).
+  (GIF), `<action>/manifest` (frame metadata JSON), `<action>/contact`
+  (auto-selection contact sheet), `<action>/raw-video` (provider video for
+  re-picks), `<action>/frames-index` (dense-frame thumbnail index),
+  `run-index` (full archived run tree).
 - `creditsDebited` / `creditsRefunded` on the job tell the user the true
   spend.
 - `engineVersion` / `workerVersion` on a finished job record which
@@ -238,7 +302,13 @@ spritesheet, GIF, and raw video.
 
 **Anti-pattern: re-running the whole character to fix one bad animation.**
 Better: enqueue a `type: "action"` job with `referenceJobId` — one
-generation instead of the full plan.
+generation instead of the full plan. If the video is fine but the *frame
+selection* is wrong, use the frame picker (0 credits) instead of regenerating.
+
+**Anti-pattern: regenerating video to fix timing / loop feel.**
+Better: inspect `<action>/contact` and `GET …/frames`, POST a pick with a
+better selection, activate it. Re-roll video only when the motion itself is
+wrong.
 
 **Anti-pattern: treating hosted output as snap-ready pixel art by default.**
 Better: hosted defaults are mixels (`high-fidelity-v1`, no snapping). Only
@@ -262,8 +332,9 @@ Artifacts Locally"), and link the run's web page for in-browser viewing.
 ## Relationship to Other Surfaces
 
 - The **CLI skill** (`spriterrific`) is for local checkouts with review gates
-  (frame picker, viewer, size contracts). The API has no interactive review:
-  selection and normalization use engine auto-defaults.
+  (frame picker GUI, viewer, size contracts). The hosted API now exposes the
+  same frame-pick / version / activate flow via `/frames` and `/picks`
+  (and the web run page's Frame picker panel).
 - The **web app** (app.spriterrific.com) is the human UI over the same queue;
   jobs enqueued via API appear there too, and API keys are managed there.
 - Full endpoint reference: `spriterrific-app/docs/http-api.md` (internal).

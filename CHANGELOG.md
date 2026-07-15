@@ -11,6 +11,15 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-15
+
+### Added
+
+- `spriterrific-api`: hosted frame picker — agents can list dense-frame
+  thumbnails, create versioned spritesheet picks, and activate a version
+  via `/api/v1/jobs/{id}/actions/{action}/frames` and `…/picks` (0 credits;
+  Studio Frames tab / CLI `frame-picker` + `process-selection` equivalent).
+
 ## [1.0.4] - 2026-07-15
 
 ### Changed
