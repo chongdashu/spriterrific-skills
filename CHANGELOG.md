@@ -11,10 +11,12 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
-## [1.0.2] - 2026-07-14
+## [1.0.2] - 2026-07-15
 
 ### Changed
 
+- `spriterrific-api`: updated where API keys live in the redesigned web app
+  (Quickstart page or Settings → API keys, instead of the old top-bar menu).
 - `spriterrific-api`: hosted jobs now run **every** action in video mode by
   default (the API fills `actionModes` server-side); the skill documents
   image mode as an explicit opt-in anti-drift tactic rather than a
