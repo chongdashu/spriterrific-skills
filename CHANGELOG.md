@@ -11,12 +11,17 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
-## [1.0.2] - 2026-07-15
+## [1.0.3] - 2026-07-15
 
 ### Changed
 
 - `spriterrific-api`: updated where API keys live in the redesigned web app
   (Quickstart page or Settings → API keys, instead of the old top-bar menu).
+
+## [1.0.2] - 2026-07-14
+
+### Changed
+
 - `spriterrific-api`: hosted jobs now run **every** action in video mode by
   default (the API fills `actionModes` server-side); the skill documents
   image mode as an explicit opt-in anti-drift tactic rather than a
@@ -52,7 +57,8 @@ app.spriterrific.com download button — serves.
 - README quick start with three install paths: zip download, a paste-ready
   AI install prompt, and a manual curl.
 
-[Unreleased]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/chongdashu/spriterrific-skills/releases/tag/v1.0.0
