@@ -81,7 +81,7 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
 | `actionContext` | `--action-context` | Extra prose for action prompts (props, pose semantics). ≤1000 chars. |
 | `chroma` | `--chroma` | Matte color, default `#00FF00`. |
 | `kColors` | `--k-colors` | Palette quantization, 2–256 (default 256). |
-| `actionModes` | `--mode` per action | Hosted default is `"video"` for **every** action; omit the field unless the user explicitly wants an action on the image path, e.g. `{ "idle": "image" }`. |
+| `actionModes` | `--mode` per action | Do not send. Every hosted action runs in video mode; `"image"` values are rejected with a 400. |
 | `imageModelAlias` / `videoModelAlias` | `--image-model` / `--video-model` | Only when the user explicitly wants a model comparison. |
 
 ## Choosing Parameters: the Output Mode Gate
@@ -112,9 +112,9 @@ Other carried-over judgment:
   blindly.
 - **Idle drift**: demand a closed loop in `actionContext` ("exact start pose
   and exact return to the same start pose for a clean loop; no stepping, no
-  foot lift"). As a last resort, `actionModes: { "idle": "image" }` cannot
-  travel — but image mode is an opt-in anti-drift tactic, not the default;
-  hosted actions run in video mode unless you set `"image"` explicitly.
+  foot lift"). If drift persists, regenerate with a tightened context — the
+  image pose-board fallback was retired from the hosted service; every
+  action runs in video mode.
 - **Video prompt cap**: hosted actions run in video mode, and the
   grok-imagine-video-i2v prompt cap is 4096 characters. Some action prompts
   (idle especially) sit near that cap already, so keep `actionContext`

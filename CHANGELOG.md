@@ -11,6 +11,15 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-07-15
+
+### Changed
+
+- `spriterrific-api`: image pose-board mode retired from the hosted service —
+  every action runs in video mode, and `actionModes` values of `"image"` are
+  now rejected with a 400. Guidance for idle drift now recommends a tightened
+  `actionContext` regenerate instead.
+
 ## [1.1.1] - 2026-07-15
 
 ### Changed
