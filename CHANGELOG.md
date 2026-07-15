@@ -11,6 +11,13 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-07-15
+
+### Changed
+
+- `spriterrific-api`: API keys moved to a dedicated **API keys** page in the
+  web app's top navigation (no longer under Settings).
+
 ## [1.1.0] - 2026-07-15
 
 ### Added
@@ -74,7 +81,9 @@ app.spriterrific.com download button — serves.
 - README quick start with three install paths: zip download, a paste-ready
   AI install prompt, and a manual curl.
 
-[Unreleased]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.4...HEAD
+[Unreleased]: https://github.com/chongdashu/spriterrific-skills/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/chongdashu/spriterrific-skills/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.4...v1.1.0
 [1.0.4]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.1...v1.0.2

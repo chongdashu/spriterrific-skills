@@ -21,9 +21,10 @@ parameter judgment is the same; only the invocation surface differs.
 - **Base URL**: `https://courteous-mouse-611.convex.site` (override with
   `SPRITERRIFIC_API_BASE` if the user supplies a different deployment).
 - **Auth**: every request needs `Authorization: Bearer sk_...`. The user
-  creates a key at app.spriterrific.com — on the Quickstart page or under
-  **Settings → API keys**. Expect it in `SPRITERRIFIC_API_KEY`; if missing,
-  ask the user for it — never invent or hardcode one.
+  creates a key at app.spriterrific.com — on the Quickstart page or the
+  **API keys** page in the top navigation. Expect it in
+  `SPRITERRIFIC_API_KEY`; if missing, ask the user for it — never invent or
+  hardcode one.
 - **Credits**: jobs debit the key owner's balance up front; failed or skipped
   steps are refunded automatically. At hosted defaults each
   image generation (anchor step) costs 30 credits and each video generation
