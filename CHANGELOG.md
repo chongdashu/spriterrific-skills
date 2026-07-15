@@ -11,6 +11,29 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-07-15
+
+### Added
+
+- `spriterrific-api`: custom action names — action jobs can request a
+  freeform lowercase slug (e.g. `sliding-tackle`, `kick`) paired with an
+  `actionBaselines` entry mapping it to the standard action whose engine
+  preset backs it (e.g. `{ "sliding-tackle": "attack" }`). Artifacts and
+  step ids carry the custom name, so moves derived from the same baseline
+  never collide. New "Custom Actions (baseline + label)" section plus an
+  anti-pattern against forcing domain moves into standard action identities.
+- `spriterrific-api`: the documented standard action vocabulary expanded
+  from 8 to the engine's full 23 presets (adds `talk`, `interact`,
+  `pick_up`, `use`, `examine`, `give`, `shrug`, `walk_forward`,
+  `walk_backward`, `block_high`, `block_low`, `knockdown`, `get_up`,
+  `light_attack`, `heavy_attack`).
+
+### Changed
+
+- `spriterrific-api`: action jobs now inherit `direction` from the
+  reference job when omitted (previously defaulted to `w` and failed
+  against non-west anchors); pass `direction` only to override.
+
 ## [1.1.2] - 2026-07-15
 
 ### Changed

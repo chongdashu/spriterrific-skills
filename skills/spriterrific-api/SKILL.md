@@ -59,7 +59,9 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
   `actions`. This mirrors CLI `bootstrap-anchors` + `run-actions`/`run`.
 - **`action`**: one extra animation reusing the anchor of a previous
   completed character job (`referenceJobId`). Cheaper than re-running the
-  whole character. Use it to add animations later or retry a bad one.
+  whole character. Use it to add animations later, retry a bad one, or run a
+  **custom action name** via `actionBaselines` (see "Custom Actions").
+  Omitting `direction` inherits the reference job's facing.
 - **`frame_extract` / `frame_pick`** (curation, auto-enqueued): zero-credit
   worker jobs that re-extract dense frames from archived raw video and
   rebuild a spritesheet. You do not enqueue these via `POST /api/v1/jobs` —
@@ -71,9 +73,10 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
 | --- | --- | --- |
 | `sourcePrompt` | `--source-prompt` | Mutually exclusive with `sourceImageUrl`. |
 | `sourceImageUrl` | `--source-image` | Must be a reachable `https:` URL. Saves one generation. |
-| `direction` | `--directions` | One of `n, ne, e, se, s, sw, w, nw`. Default `w`. One direction per job. |
+| `direction` | `--directions` | One of `n, ne, e, se, s, sw, w, nw`. Character jobs default to `w`; action jobs default to the reference job's direction (only pass it to override). One direction per job. |
 | `gameView` | `--game-view` | `platformer` (default), `adventure`, `point-and-click`, `top-down`, `rts-oblique`, `isometric`, `generic`. |
-| `actions` | `--actions` | From `walk, run, jump, hurt, attack, death, idle, crouch`. |
+| `actions` | `--actions` | Standard set: `walk, run, jump, hurt, attack, death, idle, crouch` (best-assured core) plus `talk, interact, pick_up, use, examine, give, shrug, walk_forward, walk_backward, block_high, block_low, knockdown, get_up, light_attack, heavy_attack`. Action jobs take exactly one, and may use a custom name with `actionBaselines`. |
+| `actionBaselines` | `--action-baseline` | Action jobs only: map a custom action name to its backing standard action, e.g. `{ "sliding-tackle": "attack" }`. See "Custom Actions". |
 | `candidatePromptPreset` | `--candidate-prompt-preset` | `high-fidelity-v1` (hosted default), `lobit-v1`, `preserve-reference-v1`. |
 | `pixelSnapAnchor` | `--pixel-snap-anchor` | Default `false` (hosted default is mixels). |
 | `pixelSnap` | `--pixel-snap` | Snap exported animation frames. Default `false`. |
@@ -124,6 +127,44 @@ Other carried-over judgment:
 - **Model choices**: hosted defaults (nano-banana-2-lite image,
   grok-imagine-video-i2v video) are deliberate; only override aliases for an
   explicit comparison.
+
+## Custom Actions (baseline + label)
+
+The standard actions are the best-assured vocabulary, not a ceiling. When
+the user needs a domain move that isn't a standard action (kick, sliding
+tackle, celebrate, cast-spell, …), enqueue an `action` job with the custom
+name and a `actionBaselines` entry mapping it to the closest standard
+action:
+
+```json
+{
+  "type": "action",
+  "characterName": "dog-footballer",
+  "referenceJobId": "<completed character job id>",
+  "actions": ["sliding-tackle"],
+  "actionBaselines": { "sliding-tackle": "attack" },
+  "actionContext": "low aggressive slide along the ground, leading leg extended"
+}
+```
+
+- The **baseline** supplies the engine preset (timing, frame counts, fps,
+  prompt family). Pick the standard action whose motion family is closest:
+  `attack` / `light_attack` / `heavy_attack` for offensive contact moves,
+  `hurt` for reactions, `interact` / `use` for object handling, `idle` for
+  poses/stances, `jump` for airborne moves.
+- The **custom name** labels everything: the step id (`action:sliding-tackle`)
+  and all artifact paths (`sliding-tackle/spritesheet`, `sliding-tackle/preview`,
+  …), so two moves derived from the same baseline (e.g. `kick` and
+  `sliding-tackle`, both from `attack`) never overwrite each other.
+- Custom names must be lowercase slugs, ≤40 chars (`a-z`, `0-9`, `-`, `_`),
+  can't reuse a standard action name, and can't be `anchors`, `export`,
+  `input`, or `frames`.
+- Always pair a custom action with a short `actionContext` describing the
+  motion — the baseline provides structure, the context provides the verb's
+  specifics. The ~100-character video prompt-cap guidance applies.
+- Custom actions are single `action` jobs only (character jobs accept only
+  standard actions). Quality is steered, not preset-tuned: standard actions
+  remain the assured-quality set, so prefer them when one fits.
 
 ## Recommended Agent Loop
 
@@ -315,6 +356,12 @@ wrong.
 Better: hosted defaults are mixels (`high-fidelity-v1`, no snapping). Only
 claim real-pixel-grid output when the job ran with the pixel-snap
 parameters, and relay any snap-contract warnings.
+
+**Anti-pattern: forcing a domain move into a standard action's identity.**
+Better: don't spend `attack` or `hurt` on a kick or a slide and then juggle
+local folder aliases — use a custom action (`actions: ["kick"]`,
+`actionBaselines: { "kick": "attack" }`) so the artifacts carry the real
+name and the standard slots stay free for their own motions.
 
 **Anti-pattern: burning credits on validation errors you could catch first.**
 Better: the API validates before debiting (400s cost nothing), but check the
