@@ -119,14 +119,17 @@ Other carried-over judgment:
   image pose-board fallback was retired from the hosted service; every
   action runs in video mode.
 - **Video prompt cap**: hosted actions run in video mode, and the
-  grok-imagine-video-i2v prompt cap is 4096 characters. Some action prompts
-  (idle especially) sit near that cap already, so keep `actionContext`
-  short — roughly 100 characters is safe, ~150+ can overflow. A prompt-cap
-  failure is refunded; shorten the context and retry.
+  grok-imagine-video-1.5-i2v prompt cap is 4096 characters. Some action
+  prompts (idle especially) sit near that cap already, so keep
+  `actionContext` short — roughly 100 characters is safe, ~150+ can
+  overflow. A prompt-cap failure is refunded; shorten the context and retry.
 - **Adventure characters**: `gameView: "adventure"`, `direction: "sw"`.
 - **Model choices**: hosted defaults (nano-banana-2-lite image,
-  grok-imagine-video-i2v video) are deliberate; only override aliases for an
-  explicit comparison.
+  grok-imagine-video-1.5-i2v video) are deliberate; only override aliases
+  for an explicit comparison.
+- **Provider incidents**: if video jobs fail or stall broadly, check
+  https://app.spriterrific.com/status before retrying the same request
+  repeatedly. Failed steps still auto-refund.
 
 ## Custom Actions (baseline + label)
 

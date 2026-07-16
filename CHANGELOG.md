@@ -11,6 +11,16 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-07-16
+
+### Changed
+
+- `spriterrific-api`: hosted video default documented as
+  `grok-imagine-video-1.5-i2v` (was `grok-imagine-video-i2v`); prompt-cap
+  guidance updated to match. Agents should check
+  https://app.spriterrific.com/status before hammering retries during
+  provider incidents.
+
 ## [1.2.2] - 2026-07-16
 
 ### Changed
@@ -127,7 +137,12 @@ app.spriterrific.com download button — serves.
 - README quick start with three install paths: zip download, a paste-ready
   AI install prompt, and a manual curl.
 
-[Unreleased]: https://github.com/chongdashu/spriterrific-skills/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.3...HEAD
+[1.2.3]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.2...v1.2.3
+[1.2.2]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.1...v1.2.2
+[1.2.1]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/chongdashu/spriterrific-skills/compare/v1.1.2...v1.2.0
+[1.1.2]: https://github.com/chongdashu/spriterrific-skills/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/chongdashu/spriterrific-skills/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.4...v1.1.0
 [1.0.4]: https://github.com/chongdashu/spriterrific-skills/compare/v1.0.3...v1.0.4
