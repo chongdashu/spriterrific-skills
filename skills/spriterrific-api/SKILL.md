@@ -26,9 +26,9 @@ parameter judgment is the same; only the invocation surface differs.
   `SPRITERRIFIC_API_KEY`; if missing, ask the user for it — never invent or
   hardcode one.
 - **Credits**: jobs debit the key owner's balance up front; failed or skipped
-  steps are refunded automatically. At hosted defaults each
-  image generation (anchor step) costs 30 credits and each video generation
-  (action animation) costs 100 credits.
+  steps are refunded automatically. At hosted defaults each image generation
+  (anchor step) costs 30 credits and each video generation (action animation)
+  costs 100 credits.
 
 Cost formula, before enqueueing:
 

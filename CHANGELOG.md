@@ -11,6 +11,13 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-07-16
+
+### Changed
+
+- `spriterrific-api`: costs are documented in credits only, inside the
+  skill; the README no longer covers pricing at all.
+
 ## [1.2.0] - 2026-07-15
 
 ### Added
