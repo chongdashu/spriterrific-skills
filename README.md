@@ -69,8 +69,8 @@ SPRITERRIFIC_API_KEY=sk_...
 ### 3. Prompt your agent
 
 ```text
-Using the spriterrific-api skill, generate a character: a small bunny knight
-with a wooden sword and round shield, with walk, idle, and attack animations.
+Using the spriterrific-api skill, generate a character: a chubby orange tabby
+cat in a red hoodie, with walk and idle animations.
 ```
 
 The agent enqueues the job, polls until it

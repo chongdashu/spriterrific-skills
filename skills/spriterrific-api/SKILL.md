@@ -179,12 +179,11 @@ curl -s -H "$AUTH" "$BASE/api/v1/me"
 curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
   -d '{
     "type": "character",
-    "characterName": "bunny-knight",
-    "sourcePrompt": "a small bunny knight with a wooden sword and round shield",
+    "characterName": "hoodie-cat",
+    "sourcePrompt": "a chubby orange tabby cat in a red hoodie",
     "gameView": "platformer",
     "direction": "w",
-    "actions": ["walk", "idle", "attack"],
-    "actionContext": "keeps the wooden sword in the right paw at all times"
+    "actions": ["walk", "idle"]
   }' "$BASE/api/v1/jobs"
 
 # 3. Share the live run page with the user, then poll every ~15s until

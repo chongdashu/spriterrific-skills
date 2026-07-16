@@ -11,6 +11,13 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-07-16
+
+### Changed
+
+- `spriterrific-api`: sample character is a chubby orange tabby cat in a
+  red hoodie with walk + idle (replaces bunny knight with sword/shield).
+
 ## [1.2.1] - 2026-07-16
 
 ### Changed
