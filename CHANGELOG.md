@@ -11,6 +11,20 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-07-17
+
+### Changed
+
+- `spriterrific-api`: documented that action jobs **cannot change facing** —
+  they animate an anchor that already exists on the reference job, and a
+  character job produces exactly one direction anchor. A `direction` with no
+  matching anchor is now rejected at enqueue with a 400 (previously it
+  failed asynchronously on the worker after debiting). To get another
+  facing, run a new character job with the desired `direction`, passing the
+  existing anchor's artifact `url` as `sourceImageUrl`, then animate that
+  job. The `direction` parameter row no longer says "only pass it to
+  override".
+
 ## [1.2.4] - 2026-07-17
 
 ### Changed

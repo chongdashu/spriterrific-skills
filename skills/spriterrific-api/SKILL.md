@@ -61,7 +61,14 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
   completed character job (`referenceJobId`). Cheaper than re-running the
   whole character. Use it to add animations later, retry a bad one, or run a
   **custom action name** via `actionBaselines` (see "Custom Actions").
-  Omitting `direction` inherits the reference job's facing.
+  Omitting `direction` inherits the reference job's facing. Action jobs
+  **cannot change facing**: they animate an anchor that already exists on the
+  reference job, and a character job produces exactly one direction anchor.
+  Requesting any other `direction` is rejected at enqueue with a 400. To get
+  another facing (e.g. a south-facing walk from a west-facing character), run
+  a **new character job** with the desired `direction`, passing the existing
+  anchor's artifact `url` as `sourceImageUrl` so the design stays consistent —
+  then animate that job.
 - **`frame_extract` / `frame_pick`** (curation, auto-enqueued): zero-credit
   worker jobs that re-extract dense frames from archived raw video and
   rebuild a spritesheet. You do not enqueue these via `POST /api/v1/jobs` —
@@ -73,7 +80,7 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
 | --- | --- | --- |
 | `sourcePrompt` | `--source-prompt` | Mutually exclusive with `sourceImageUrl`. |
 | `sourceImageUrl` | `--source-image` | Must be a reachable `https:` URL. Saves one generation. |
-| `direction` | `--directions` | One of `n, ne, e, se, s, sw, w, nw`. Character jobs default to `w`; action jobs default to the reference job's direction (only pass it to override). One direction per job. |
+| `direction` | `--directions` | One of `n, ne, e, se, s, sw, w, nw`. Character jobs default to `w`; action jobs default to the reference job's direction and must match an anchor that exists on the reference job (normally: omit it). One direction per job — new facings need a new character job (see "Job Types"). |
 | `gameView` | `--game-view` | `platformer` (default), `adventure`, `point-and-click`, `top-down`, `rts-oblique`, `isometric`, `generic`. |
 | `actions` | `--actions` | Standard set: `walk, run, jump, hurt, attack, death, idle, crouch` (best-assured core) plus `talk, interact, pick_up, use, examine, give, shrug, walk_forward, walk_backward, block_high, block_low, knockdown, get_up, light_attack, heavy_attack`. Action jobs take exactly one, and may use a custom name with `actionBaselines`. |
 | `actionBaselines` | `--action-baseline` | Action jobs only: map a custom action name to its backing standard action, e.g. `{ "sliding-tackle": "attack" }`. See "Custom Actions". |
