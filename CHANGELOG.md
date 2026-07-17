@@ -11,6 +11,26 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-07-17
+
+### Changed
+
+- `spriterrific-api`: idle-drift guidance rewritten from a field failure —
+  idles need a full-body freeze list ("frozen statue pose, feet glued, no
+  stepping, no walking, no foot lift, no arm swing, no weight shift, only a
+  tiny breathing bob"), because banning only foot motion pushes drift into
+  arm swing and hip sway that still reads as walking. Failed rolls should
+  ban each visible motion by name and cap allowed motion with "only …",
+  then verify feet and torso enlarged.
+- `spriterrific-api`: documented that `actionContext` is job-global — one
+  string conditions every action in the job. Never bundle `idle` with
+  locomotion actions under a locomotion-flavored context; splitting is
+  cost-neutral (character job with idle + separate `action` job costs the
+  same as bundling).
+- `spriterrific-api`: `actionContext` length guidance relaxed from ~100 to
+  ~130 characters (field-verified safe); ~150+ still risks the video
+  prompt cap.
+
 ## [1.2.3] - 2026-07-16
 
 ### Changed
@@ -137,7 +157,8 @@ app.spriterrific.com download button — serves.
 - README quick start with three install paths: zip download, a paste-ready
   AI install prompt, and a manual curl.
 
-[Unreleased]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.3...HEAD
+[Unreleased]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.4...HEAD
+[1.2.4]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.0...v1.2.1

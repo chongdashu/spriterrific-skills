@@ -113,16 +113,31 @@ Other carried-over judgment:
 - **Walk that reads like a run**: use `actionContext` for pose semantics
   ("slow relaxed walk, upright torso, no sprint lean") rather than re-rolling
   blindly.
-- **Idle drift**: demand a closed loop in `actionContext` ("exact start pose
-  and exact return to the same start pose for a clean loop; no stepping, no
-  foot lift"). If drift persists, regenerate with a tightened context — the
-  image pose-board fallback was retired from the hosted service; every
-  action runs in video mode.
+- **`actionContext` is job-global**: the one context string conditions
+  *every* action in the job. Never bundle `idle` with locomotion actions
+  while the context carries locomotion semantics ("one foot always on
+  ground") — the idle absorbs them and walks in place. Split instead; it is
+  cost-neutral: bundling idle + walk in one character job costs the same as
+  idle in the character job plus a separate `action` job for walk, and each
+  job gets a context scoped to its own motion.
+- **Idle drift**: give idles a full-body freeze list, not just "stand
+  still". Field-tested recipe: "frozen statue pose, feet glued, no
+  stepping, no walking, no foot lift, no arm swing, no weight shift, only a
+  tiny breathing bob" (130 chars, prompt-cap safe). Partial freezes fail
+  sideways — banning only foot motion pushes the drift into arm swing and
+  hip sway that still reads as walking. If a roll still drifts, name each
+  motion visible in the failed artifact and ban it explicitly, and budget
+  the allowed motion with "only …". Context steers but does not guarantee
+  (video generation is stochastic), so inspect the result's feet and torso
+  enlarged before delivering — whole-sheet glances miss stepping. The image
+  pose-board fallback was retired from the hosted service; every action
+  runs in video mode.
 - **Video prompt cap**: hosted actions run in video mode, and the
   grok-imagine-video-1.5-i2v prompt cap is 4096 characters. Some action
   prompts (idle especially) sit near that cap already, so keep
-  `actionContext` short — roughly 100 characters is safe, ~150+ can
-  overflow. A prompt-cap failure is refunded; shorten the context and retry.
+  `actionContext` short — up to ~130 characters is field-verified safe,
+  ~150+ can overflow. A prompt-cap failure is refunded; shorten the context
+  and retry.
 - **Adventure characters**: `gameView: "adventure"`, `direction: "sw"`.
 - **Model choices**: hosted defaults (nano-banana-2-lite image,
   grok-imagine-video-1.5-i2v video) are deliberate; only override aliases
