@@ -11,6 +11,18 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.2.6] - 2026-07-18
+
+### Changed
+
+- `spriterrific-api`: documented that `sourceImageUrl` must **directly serve
+  the image bytes** (`Content-Type: image/*`). Share/preview pages — such as
+  tmpfiles.org `/dl/` links or Google Drive / Dropbox share links — return
+  HTML and are now rejected by the worker with a clear "returned a web page,
+  not an image file" error (previously they crashed the job with a cryptic
+  `cannot identify image file`). Prefer hosts that serve raw files (catbox,
+  uguu) and mind link expiry (tmpfiles expires in ~60 minutes).
+
 ## [1.2.5] - 2026-07-17
 
 ### Changed

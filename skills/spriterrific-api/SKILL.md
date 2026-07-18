@@ -79,7 +79,7 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
 | API field | CLI equivalent | Notes |
 | --- | --- | --- |
 | `sourcePrompt` | `--source-prompt` | Mutually exclusive with `sourceImageUrl`. |
-| `sourceImageUrl` | `--source-image` | Must be a reachable `https:` URL. Saves one generation. |
+| `sourceImageUrl` | `--source-image` | Must be a reachable `https:` URL that directly serves the image bytes (`Content-Type: image/*`) — share/preview pages (tmpfiles.org `/dl/` links, Google Drive/Dropbox share links) return HTML and are rejected. Prefer hosts like catbox/uguu that serve raw files, and mind expiry (tmpfiles expires in ~60 min). Saves one generation. |
 | `direction` | `--directions` | One of `n, ne, e, se, s, sw, w, nw`. Character jobs default to `w`; action jobs default to the reference job's direction and must match an anchor that exists on the reference job (normally: omit it). One direction per job — new facings need a new character job (see "Job Types"). |
 | `gameView` | `--game-view` | `platformer` (default), `adventure`, `point-and-click`, `top-down`, `rts-oblique`, `isometric`, `generic`. |
 | `actions` | `--actions` | Standard set: `walk, run, jump, hurt, attack, death, idle, crouch` (best-assured core) plus `talk, interact, pick_up, use, examine, give, shrug, walk_forward, walk_backward, block_high, block_low, knockdown, get_up, light_attack, heavy_attack`. Action jobs take exactly one, and may use a custom name with `actionBaselines`. |
