@@ -11,6 +11,16 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-07-21
+
+### Changed
+
+- `spriterrific-api`: documented that jobs with a `referenceJobId` (action
+  jobs and character variants) now inherit the reference job's `chroma`
+  matte automatically — agents no longer need to re-send it, and
+  magenta-matte characters stay keyed against magenta on follow-up
+  animations. Pass `chroma` explicitly only to override.
+
 ## [1.3.0] - 2026-07-21
 
 ### Added
@@ -210,7 +220,11 @@ app.spriterrific.com download button — serves.
 - README quick start with three install paths: zip download, a paste-ready
   AI install prompt, and a manual curl.
 
-[Unreleased]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.4...HEAD
+[Unreleased]: https://github.com/chongdashu/spriterrific-skills/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/chongdashu/spriterrific-skills/compare/v1.3.0...v1.3.1
+[1.3.0]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.6...v1.3.0
+[1.2.6]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.5...v1.2.6
+[1.2.5]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.4...v1.2.5
 [1.2.4]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.3...v1.2.4
 [1.2.3]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/chongdashu/spriterrific-skills/compare/v1.2.1...v1.2.2

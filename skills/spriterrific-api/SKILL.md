@@ -1,7 +1,7 @@
 ---
 name: spriterrific-api
 description: "Drive the hosted Spriterrific HTTP API from any agent or project: enqueue character/action sprite-generation jobs with CLI-equivalent parameters, create character variants (same character, new outfit or facing), poll job status, re-pick spritesheet frames (Studio frame-picker equivalent), download artifacts, and manage credits. Use when the user wants hosted/cloud sprite generation via API key instead of the local CLI."
-version: 1.3.0
+version: 1.3.1
 metadata:
   short-description: "Hosted Spriterrific generation via HTTP API."
 ---
@@ -123,7 +123,7 @@ and unzip it at the project root (it refreshes both `.claude/skills/` and
 | `pixelSnap` | `--pixel-snap` | Snap exported animation frames. Default `false`. |
 | `seed` | `--seed` | Reproducibility. |
 | `actionContext` | `--action-context` | Extra prose for action prompts (props, pose semantics). ≤1000 chars. |
-| `chroma` | `--chroma` | Matte color, default `#00FF00`. |
+| `chroma` | `--chroma` | Matte color, default `#00FF00`. Jobs with a `referenceJobId` (actions and variants) inherit the reference job's chroma when omitted — do not re-send it. |
 | `kColors` | `--k-colors` | Palette quantization, 2–256 (default 256). |
 | `actionModes` | `--mode` per action | Do not send. Every hosted action runs in video mode; `"image"` values are rejected with a 400. |
 | `imageModelAlias` / `videoModelAlias` | `--image-model` / `--video-model` | Only when the user explicitly wants a model comparison. |
@@ -150,7 +150,8 @@ Carry over the CLI skill's mode gate. If the user has not chosen, ask briefly:
 Other carried-over judgment:
 
 - **Green characters**: if the subject is green, teal, or lime, set
-  `chroma: "#FF00FF"` so background keying doesn't eat the character.
+  `chroma: "#FF00FF"` on the *character* job so background keying doesn't eat
+  the character. Follow-up action and variant jobs inherit it automatically.
 - **Walk that reads like a run**: use `actionContext` for pose semantics
   ("slow relaxed walk, upright torso, no sprint lean") rather than re-rolling
   blindly.
