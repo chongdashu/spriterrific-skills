@@ -1,6 +1,7 @@
 ---
 name: spriterrific-api
-description: "Drive the hosted Spriterrific HTTP API from any agent or project: enqueue character/action sprite-generation jobs with CLI-equivalent parameters, poll job status, re-pick spritesheet frames (Studio frame-picker equivalent), download artifacts, and manage credits. Use when the user wants hosted/cloud sprite generation via API key instead of the local CLI."
+description: "Drive the hosted Spriterrific HTTP API from any agent or project: enqueue character/action sprite-generation jobs with CLI-equivalent parameters, create character variants (same character, new outfit or facing), poll job status, re-pick spritesheet frames (Studio frame-picker equivalent), download artifacts, and manage credits. Use when the user wants hosted/cloud sprite generation via API key instead of the local CLI."
+version: 1.3.0
 metadata:
   short-description: "Hosted Spriterrific generation via HTTP API."
 ---
@@ -34,9 +35,29 @@ Cost formula, before enqueueing:
 
 - character job from `sourcePrompt`: `3 × 30 + actions × 100` credits
 - character job from `sourceImageUrl`: `2 × 30 + actions × 100` credits
+- character variant job (`referenceJobId`, with or without `editPrompt`):
+  `2 × 30 + actions × 100` credits
 - action job: `100` credits per action (exactly one action per job)
 
 Always check `GET /api/v1/me` first and tell the user the expected debit.
+
+### Skill version handshake (send on every request)
+
+This skill file is a copy in the user's project and never auto-updates, so
+the API pushes update hints back. On **every** request, send this skill's
+version (from the frontmatter above) as a header:
+
+```bash
+-H "X-Spriterrific-Skill-Version: 1.3.0"
+```
+
+When your copy is older than the released skill, `GET /api/v1/me` and
+`POST /api/v1/jobs` responses include a `notice` string describing what
+changed and how to update. If a response carries `notice`, tell the user —
+do not silently ignore it. To update: download
+`https://github.com/chongdashu/spriterrific-skills/releases/latest/download/spriterrific-api-skill.zip`
+and unzip it at the project root (it refreshes both `.claude/skills/` and
+`.agents/skills/` copies).
 
 ## Endpoints
 
@@ -57,6 +78,18 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
 - **`character`** (the main flow): generates a direction anchor from
   `sourcePrompt` or `sourceImageUrl`, then one animation per entry in
   `actions`. This mirrors CLI `bootstrap-anchors` + `run-actions`/`run`.
+- **`character` variant** (same character, changed): a character job with
+  `referenceJobId` instead of a prompt/image. The reference job's anchor
+  becomes the base image, so the result stays recognizably the *same
+  character*. Two uses:
+  - **Edit**: add `editPrompt` describing only the delta ("replace the robes
+    with a white hoodie and grey joggers") — face, skin tone, hair,
+    proportions, pose, and art style are preserved automatically.
+  - **Re-face**: omit `editPrompt` and set a new `direction` to get another
+    facing of the unchanged design.
+  See "Character Variants" below. Never rebuild a variant from a new text
+  prompt or an externally generated lookalike image — that invents a new
+  face and art style.
 - **`action`**: one extra animation reusing the anchor of a previous
   completed character job (`referenceJobId`). Cheaper than re-running the
   whole character. Use it to add animations later, retry a bad one, or run a
@@ -66,9 +99,8 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
   reference job, and a character job produces exactly one direction anchor.
   Requesting any other `direction` is rejected at enqueue with a 400. To get
   another facing (e.g. a south-facing walk from a west-facing character), run
-  a **new character job** with the desired `direction`, passing the existing
-  anchor's artifact `url` as `sourceImageUrl` so the design stays consistent —
-  then animate that job.
+  a **character variant job** with the desired `direction` and the existing
+  job as `referenceJobId` — then animate that job.
 - **`frame_extract` / `frame_pick`** (curation, auto-enqueued): zero-credit
   worker jobs that re-extract dense frames from archived raw video and
   rebuild a spritesheet. You do not enqueue these via `POST /api/v1/jobs` —
@@ -78,13 +110,15 @@ Always check `GET /api/v1/me` first and tell the user the expected debit.
 
 | API field | CLI equivalent | Notes |
 | --- | --- | --- |
-| `sourcePrompt` | `--source-prompt` | Mutually exclusive with `sourceImageUrl`. |
+| `sourcePrompt` | `--source-prompt` | Exactly one of `sourcePrompt`, `sourceImageUrl`, or `referenceJobId` per character job. |
 | `sourceImageUrl` | `--source-image` | Must be a reachable `https:` URL that directly serves the image bytes (`Content-Type: image/*`) — share/preview pages (tmpfiles.org `/dl/` links, Google Drive/Dropbox share links) return HTML and are rejected. Prefer hosts like catbox/uguu that serve raw files, and mind expiry (tmpfiles expires in ~60 min). Saves one generation. |
-| `direction` | `--directions` | One of `n, ne, e, se, s, sw, w, nw`. Character jobs default to `w`; action jobs default to the reference job's direction and must match an anchor that exists on the reference job (normally: omit it). One direction per job — new facings need a new character job (see "Job Types"). |
+| `referenceJobId` | — | Action jobs: the character job whose anchor is animated. Character jobs: makes a **variant job** — the reference anchor is the base image (see "Character Variants"). |
+| `editPrompt` | `--edit-prompt` | Character variant jobs: identity-preserving edit applied to the base anchor. Describe **only the delta**; everything not named (face, skin tone, hair, proportions, pose, art style) is preserved. ≤1000 chars. |
+| `direction` | `--directions` | One of `n, ne, e, se, s, sw, w, nw`. Character jobs default to `w`; variant and action jobs default to the reference job's direction. Action jobs must match an existing anchor (normally: omit it). New facings need a character variant job (see "Job Types"). |
 | `gameView` | `--game-view` | `platformer` (default), `adventure`, `point-and-click`, `top-down`, `rts-oblique`, `isometric`, `generic`. |
 | `actions` | `--actions` | Standard set: `walk, run, jump, hurt, attack, death, idle, crouch` (best-assured core) plus `talk, interact, pick_up, use, examine, give, shrug, walk_forward, walk_backward, block_high, block_low, knockdown, get_up, light_attack, heavy_attack`. Action jobs take exactly one, and may use a custom name with `actionBaselines`. |
 | `actionBaselines` | `--action-baseline` | Action jobs only: map a custom action name to its backing standard action, e.g. `{ "sliding-tackle": "attack" }`. See "Custom Actions". |
-| `candidatePromptPreset` | `--candidate-prompt-preset` | `high-fidelity-v1` (hosted default), `lobit-v1`, `preserve-reference-v1`. |
+| `candidatePromptPreset` | `--candidate-prompt-preset` | `high-fidelity-v1` (hosted default), `lobit-v1`, `preserve-reference-v1`, `edit-reference-v1` (set automatically when `editPrompt` is present; variants without an `editPrompt` default to `preserve-reference-v1`). |
 | `pixelSnapAnchor` | `--pixel-snap-anchor` | Default `false` (hosted default is mixels). |
 | `pixelSnap` | `--pixel-snap` | Snap exported animation frames. Default `false`. |
 | `seed` | `--seed` | Reproducibility. |
@@ -153,6 +187,49 @@ Other carried-over judgment:
   https://app.spriterrific.com/status before retrying the same request
   repeatedly. Failed steps still auto-refund.
 
+## Character Variants (same character, new outfit or facing)
+
+When the user wants an existing character *changed* — a new outfit, a
+swapped prop, armor variants, or the same design facing another direction —
+enqueue a character job whose source is the previous job:
+
+```json
+{
+  "type": "character",
+  "characterName": "hoodie-cat-street",
+  "referenceJobId": "<completed character job id>",
+  "editPrompt": "replace the red hoodie with a denim jacket and add white sneakers",
+  "actions": ["walk", "idle"]
+}
+```
+
+The reference job's anchor is downloaded as the base image and edited with
+an identity-preserving preset: the face, facial features, expression, skin
+tone, hairstyle, body proportions, pose, and rendering style are pinned;
+only what the `editPrompt` names changes.
+
+Writing a good `editPrompt`:
+
+- Describe **only the delta**: "replace X with Y", "add Z", "recolor the
+  cloak to deep red". Everything you do not mention is preserved.
+- Do **not** re-describe the character ("a cat wizard with...") — a full
+  description competes with the base image and reintroduces drift.
+- One coherent change set per variant. For heavy redesigns (new species,
+  different body type), a fresh character job is honest — that *is* a new
+  character.
+
+Re-facing without changes: omit `editPrompt` and set `direction` to the new
+facing. The design is preserved (`preserve-reference-v1`) while the engine
+generates the new-direction anchor. Then animate the new job with `action`
+jobs as usual.
+
+**Never** create a variant by writing a new `sourcePrompt` from scratch or
+generating a lookalike reference with another image tool and passing it as
+`sourceImageUrl`. Field case: an agent regenerated a character externally
+for an outfit swap and the result lost the original's face, skin tone, and
+art style even though every trait was carefully described. Text prompts
+cannot pin identity; the variant path exists precisely for this.
+
 ## Custom Actions (baseline + label)
 
 The standard actions are the best-assured vocabulary, not a ceiling. When
@@ -196,12 +273,14 @@ action:
 ```bash
 BASE=${SPRITERRIFIC_API_BASE:-https://courteous-mouse-611.convex.site}
 AUTH="Authorization: Bearer $SPRITERRIFIC_API_KEY"
+SKILL="X-Spriterrific-Skill-Version: 1.3.0"
 
-# 1. Pre-flight: balance vs expected cost.
-curl -s -H "$AUTH" "$BASE/api/v1/me"
+# 1. Pre-flight: balance vs expected cost. If the response carries a
+#    "notice" field, relay it to the user (skill update available).
+curl -s -H "$AUTH" -H "$SKILL" "$BASE/api/v1/me"
 
 # 2. Enqueue.
-curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+curl -s -X POST -H "$AUTH" -H "$SKILL" -H "Content-Type: application/json" \
   -d '{
     "type": "character",
     "characterName": "hoodie-cat",
@@ -365,6 +444,12 @@ spritesheet, GIF, and raw video.
   the real `modelAlias`, `endpointId`, and mode per generation.
 
 ## Anti-Patterns
+
+**Anti-pattern: regenerating a character from text (or an external image
+tool) to change its outfit.** A new generation invents a new face, skin
+tone, and style no matter how carefully the prompt re-describes the
+original. Better: a character variant job — `referenceJobId` +
+`editPrompt` naming only the change (see "Character Variants").
 
 **Anti-pattern: re-running the whole character to fix one bad animation.**
 Better: enqueue a `type: "action"` job with `referenceJobId` — one

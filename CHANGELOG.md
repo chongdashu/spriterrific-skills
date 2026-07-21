@@ -11,6 +11,33 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-07-21
+
+### Added
+
+- `spriterrific-api`: **character variant jobs** — edit an existing
+  character without losing the character. A character job with
+  `referenceJobId` uses that job's anchor as the base image; add
+  `editPrompt` describing only the delta ("replace the robes with a white
+  hoodie") for an identity-preserving outfit/prop edit, or omit it and set a
+  new `direction` to re-face the unchanged design. New "Character Variants"
+  section covers delta-writing guidance, and a new anti-pattern warns
+  against regenerating variants from text prompts or external image tools
+  (which invent a new face and style). Variants cost the same as an
+  image-sourced character (2 image generations + actions).
+- `spriterrific-api`: **skill version handshake** — the skill now carries a
+  `version` in its frontmatter and sends it as
+  `X-Spriterrific-Skill-Version` on every request; when a newer skill has
+  been released, `GET /api/v1/me` and `POST /api/v1/jobs` responses include
+  a `notice` telling the agent the copy is outdated and how to update.
+  Agents must surface the notice to the user.
+
+### Changed
+
+- `spriterrific-api`: the recommended fix for "action job needs a facing
+  the character doesn't have" is now a variant job (`referenceJobId` +
+  `direction`) instead of re-uploading the anchor URL as `sourceImageUrl`.
+
 ## [1.2.6] - 2026-07-18
 
 ### Changed
