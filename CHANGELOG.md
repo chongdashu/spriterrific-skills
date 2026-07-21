@@ -11,6 +11,23 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-07-21
+
+### Changed
+
+- `spriterrific-api`: the output-mode gate's pixel-snap option is relabeled
+  **"Chunky low-fi on a real pixel grid (lobit)"** and now describes the
+  aesthetic honestly: a deliberately simple, low-fidelity distillation
+  (compact silhouettes, big pixel clusters) that works best for creatures,
+  monsters, and blocky or armored characters — with a note that detailed
+  humanoids commonly trip the snap-contract warning.
+- `spriterrific-api`: new explicit "not yet served" guidance — classic
+  16-bit / arcade fighting-game style (detailed humanoids with preserved
+  proportions on a ~100–140px native grid) is not produced by `lobit-v1`
+  and agents should not route such requests there. Until the dedicated
+  pipeline ships, agents should say so and offer the mixels default as
+  today's best result.
+
 ## [1.3.1] - 2026-07-21
 
 ### Changed

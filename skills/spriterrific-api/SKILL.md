@@ -1,7 +1,7 @@
 ---
 name: spriterrific-api
 description: "Drive the hosted Spriterrific HTTP API from any agent or project: enqueue character/action sprite-generation jobs with CLI-equivalent parameters, create character variants (same character, new outfit or facing), poll job status, re-pick spritesheet frames (Studio frame-picker equivalent), download artifacts, and manage credits. Use when the user wants hosted/cloud sprite generation via API key instead of the local CLI."
-version: 1.3.1
+version: 1.3.2
 metadata:
   short-description: "Hosted Spriterrific generation via HTTP API."
 ---
@@ -48,7 +48,7 @@ the API pushes update hints back. On **every** request, send this skill's
 version (from the frontmatter above) as a header:
 
 ```bash
--H "X-Spriterrific-Skill-Version: 1.3.0"
+-H "X-Spriterrific-Skill-Version: 1.3.2"
 ```
 
 When your copy is older than the released skill, `GET /api/v1/me` and
@@ -118,7 +118,7 @@ and unzip it at the project root (it refreshes both `.claude/skills/` and
 | `gameView` | `--game-view` | `platformer` (default), `adventure`, `point-and-click`, `top-down`, `rts-oblique`, `isometric`, `generic`. |
 | `actions` | `--actions` | Standard set: `walk, run, jump, hurt, attack, death, idle, crouch` (best-assured core) plus `talk, interact, pick_up, use, examine, give, shrug, walk_forward, walk_backward, block_high, block_low, knockdown, get_up, light_attack, heavy_attack`. Action jobs take exactly one, and may use a custom name with `actionBaselines`. |
 | `actionBaselines` | `--action-baseline` | Action jobs only: map a custom action name to its backing standard action, e.g. `{ "sliding-tackle": "attack" }`. See "Custom Actions". |
-| `candidatePromptPreset` | `--candidate-prompt-preset` | `high-fidelity-v1` (hosted default), `lobit-v1`, `preserve-reference-v1`, `edit-reference-v1` (set automatically when `editPrompt` is present; variants without an `editPrompt` default to `preserve-reference-v1`). |
+| `candidatePromptPreset` | `--candidate-prompt-preset` | `high-fidelity-v1` (hosted default), `lobit-v1` (chunky low-fi distillation — see the mode gate below), `preserve-reference-v1`, `edit-reference-v1` (set automatically when `editPrompt` is present; variants without an `editPrompt` default to `preserve-reference-v1`). |
 | `pixelSnapAnchor` | `--pixel-snap-anchor` | Default `false` (hosted default is mixels). |
 | `pixelSnap` | `--pixel-snap` | Snap exported animation frames. Default `false`. |
 | `seed` | `--seed` | Reproducibility. |
@@ -136,13 +136,23 @@ Carry over the CLI skill's mode gate. If the user has not chosen, ask briefly:
    recoverable pixel grid. Use `candidatePromptPreset: "high-fidelity-v1"`,
    `pixelSnapAnchor: false`, `pixelSnap: false`. Simplest and safest hosted
    path.
-2. **Pixel-snap / real pixels**: stricter low-bit art recovered onto a real
-   pixel grid. Use `candidatePromptPreset: "lobit-v1"`,
-   `pixelSnapAnchor: true`, `pixelSnap: true`, `kColors: 64`. The lobit
-   snap-contract check is a *warning* on the hosted path (surfaced in
-   `steps[].warnings`), not a hard failure — relay any warning to the user
-   because it signals the candidate came out taller/denser than the style
-   intends.
+2. **Chunky low-fi on a real pixel grid (lobit)**: a deliberately simple,
+   low-fidelity distillation recovered onto a real pixel grid — compact
+   silhouettes, big pixel clusters, detail collapsed into one or two cues.
+   Works best for creatures, monsters, and blocky or armored characters.
+   Use `candidatePromptPreset: "lobit-v1"`, `pixelSnapAnchor: true`,
+   `pixelSnap: true`, `kColors: 64`. The lobit snap-contract check is a
+   *warning* on the hosted path (surfaced in `steps[].warnings`), not a hard
+   failure — relay any warning to the user because it signals the candidate
+   came out taller/denser than the style intends (common with detailed
+   humanoid characters).
+
+   **Not yet served: "classic 16-bit" / arcade fighting-game style** —
+   detailed humanoids with preserved proportions on a ~100–140px native
+   grid. Lobit is not that style and will not produce it; a dedicated
+   pipeline is in development. If the user asks for 16-bit arcade sprites,
+   say so plainly and offer mixels (option 1) as today's best result rather
+   than routing the request to lobit.
 3. **Reference-preserving**: user says "keep this exact style/proportions" for
    a `sourceImageUrl`. Use `candidatePromptPreset: "preserve-reference-v1"`;
    pixel snapping remains a separate decision.
