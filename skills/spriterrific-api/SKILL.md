@@ -1,7 +1,7 @@
 ---
 name: spriterrific-api
 description: "Drive the hosted Spriterrific HTTP API from any agent or project: enqueue character/action sprite-generation jobs with CLI-equivalent parameters, create character variants (same character, new outfit or facing), poll job status, re-pick spritesheet frames (Studio frame-picker equivalent), download artifacts, and manage credits. Use when the user wants hosted/cloud sprite generation via API key instead of the local CLI."
-version: 1.4.0
+version: 1.3.3
 metadata:
   short-description: "Hosted Spriterrific generation via HTTP API."
 ---
@@ -57,7 +57,7 @@ the API pushes update hints back. On **every** request, send this skill's
 version (from the frontmatter above) as a header:
 
 ```bash
--H "X-Spriterrific-Skill-Version: 1.4.0"
+-H "X-Spriterrific-Skill-Version: 1.3.3"
 ```
 
 When your copy is older than the released skill, `GET /api/v1/me` and
@@ -293,7 +293,7 @@ action:
 ```bash
 BASE=${SPRITERRIFIC_API_BASE:-https://courteous-mouse-611.convex.site}
 AUTH="Authorization: Bearer $SPRITERRIFIC_API_KEY"
-SKILL="X-Spriterrific-Skill-Version: 1.4.0"
+SKILL="X-Spriterrific-Skill-Version: 1.3.0"
 
 # 1. Pre-flight: balance vs expected cost. If the response carries a
 #    "notice" field, relay it to the user (skill update available).
@@ -318,8 +318,8 @@ curl -s -H "$AUTH" "$BASE/api/v1/jobs/$JOB_ID"
 # 4. Download artifacts by their `url` field into the local run folder
 #    (see "Save Artifacts Locally" below).
 
-# 5. Make each animation smooth: re-pick every frame of one cycle at 24 fps
-#    (default for mixels) — see "Smooth Animation" below. Free; 0 credits.
+# 5. (Optional) Re-pick frames if the auto-selection looks wrong — see
+#    "Frame Picker" below. Free; no fal.ai cost.
 ```
 
 As soon as the enqueue returns a `jobId`, give the user the run's live page
@@ -387,92 +387,13 @@ curl -s -H "$AUTH" "$BASE/api/v1/jobs/$JOB_ID"
 
 Judgment tips (same as Studio):
 
-- For smooth motion, take consecutive frames (every frame of one cycle) at
-  24 fps — see "Smooth Animation" below. Skipping frames (every 2nd or 3rd)
-  is what makes the automatic 8-frame sheets look choppy; only do it when
-  the user wants a limited-animation look.
-- For loops, end one frame *before* the pose repeats; including the repeat
-  shows the same pose twice and the loop hitches.
+- Prefer even spacing between a clear start pose and end pose for loops.
+- Keep frame counts near the action preset (often 6–8); extremes look choppy
+  or wasteful.
 - After activate, always re-fetch `GET /api/v1/jobs/{jobId}` before
   downloading — the `url`s on `<action>/spritesheet` change.
 - Older jobs without `<action>/raw-video` return `unavailable`; tell the user
   to regenerate that action if they need the picker.
-
-## Smooth Animation: Use Every Frame (default for mixels)
-
-The automatic spritesheet (`v1`) keeps 8 frames by skipping frames: a walk
-keeps every 3rd frame of its cycle and plays at 10 fps, a run every 2nd
-frame at 12 fps. The hosted video is 24 fps (about 2 s and 49 frames for
-walk and run; about 1 s for idle, jump, and hurt), so one cycle holds far
-more motion than `v1` ships. Every frame of one cycle at 24 fps looks much
-smoother. Field case: a platformer hero's run went from 8 frames at 12 fps
-to 16 frames at 24 fps, and its walk from 8 at 10 fps to 24 at 24 fps; the
-difference in game was large.
-
-**Default:** after each action finishes, create a dense pick and activate
-it (0 credits, about a minute per action). Skip this, and keep `v1`, when
-the user chose lobit / pixel snap or asked for a choppy, limited-animation
-look — 8–12 frames suits chunky pixel art. Either way `v1` stays available;
-tell the user which version is active and that the other exists.
-
-What to pick (frame names come from `GET …/frames`, in order; pick at most
-64 frames, `fps` 1–60):
-
-| Action | Frames | fps |
-| --- | --- | --- |
-| `walk`, `walk_forward`, `walk_backward` | One cycle starting about 8% into the clip; measure its length (typically 22–24 frames) | 24 |
-| `run` | One cycle starting about 20% into the clip; measure its length (typically 14–16 frames) | 24 |
-| Other loops (`talk`, custom loops) | One measured cycle | 24 |
-| One-shots and transitions (`jump`, `hurt`, `attack`, `death`, …) | Every frame from the start pose to the settled end pose, minus smeared frames and exact repeats | 24, or 12 when the clip doubles every frame |
-| `idle` | Keep `v1` unless the clip visibly moves; dense idle frames mostly repeat | — |
-
-Measure the cycle instead of trusting a typical length — it varies per
-video, and a wrong length makes the loop pop. The cycle length is the
-offset `k` where frame `start + k` looks most like frame `start`; pick
-frames `start` … `start + k - 1`. Search only full-cycle offsets (walk
-18–30, run 10–20): halfway through a walk the opposite leg leads and the
-silhouette matches almost as well, which would ship a half cycle.
-
-```python
-import io
-import subprocess
-
-from PIL import Image, ImageChops, ImageStat
-
-
-def load_thumb(url: str) -> Image.Image:
-    """Download one dense-frame thumbnail as a small grayscale image."""
-    data = subprocess.run(["curl", "-s", url], check=True, capture_output=True).stdout
-    return Image.open(io.BytesIO(data)).convert("L").resize((64, 64))
-
-
-def cycle_length(urls: list[str], start: int, lo: int, hi: int) -> int:
-    """Return the offset in [lo, hi] whose frame best matches the frame at start."""
-    ref = load_thumb(urls[start])
-
-    def distance(k: int) -> float:
-        """Mean pixel difference between the start frame and frame start + k."""
-        return ImageStat.Stat(ImageChops.difference(ref, load_thumb(urls[start + k]))).mean[0]
-
-    return min(range(lo, min(hi, len(urls) - 1 - start) + 1), key=distance)
-
-
-# frames = GET …/frames → payload["frames"] (each has "name" and "url")
-# start = round((len(frames) - 1) * 0.20)   # run; 0.08 for walk
-# k = cycle_length([f["url"] for f in frames], start, 10, 20)   # walk: 18, 30
-# pick = [f["name"] for f in frames[start : start + k]]
-```
-
-Then POST the pick with `"fps": 24`, poll the pick job, activate the new
-version, re-fetch the job, and download. Open the new `<action>/preview`
-GIF and check that the loop closes without a hitch before reporting.
-
-Don't ask the video model for slow motion to get more frames: in testing
-it returned a 12 fps clip with fewer distinct frames per cycle than the
-normal run. Dense sheets are larger — 24 frames is a 1280×1280 sheet (5
-columns × 5 rows of 256 px) against 1280×512 for 8 — which games handle
-easily. When wiring into a game, play at the manifest's `fps` and tie
-locomotion playback rate to movement speed so feet don't slide.
 
 ## Save Artifacts Locally (required)
 
@@ -560,12 +481,6 @@ selection* is wrong, use the frame picker (0 credits) instead of regenerating.
 Better: inspect `<action>/contact` and `GET …/frames`, POST a pick with a
 better selection, activate it. Re-roll video only when the motion itself is
 wrong.
-
-**Anti-pattern: delivering the automatic 8-frame sheet as the final
-animation for mixels.** It skips most of the video's frames, so motion
-looks choppy. Better: re-pick every frame of one cycle at 24 fps (see
-"Smooth Animation") — free, and far smoother in game. Keep the 8–12 frame
-look only for lobit / pixel snap or when the user asks for it.
 
 **Anti-pattern: treating hosted output as snap-ready pixel art by default.**
 Better: hosted defaults are mixels (`high-fidelity-v1`, no snapping). Only
