@@ -11,6 +11,23 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-12
+
+### Fixed
+
+- **Smooth Animation's cycle snippet no longer ships half a walk or run.**
+  It searched a fixed offset range (walk 18–30, run 10–20) for the frame
+  most like the start, but hosted clips have measured walk cycles of 18–31
+  frames and run cycles of 13–22, and halfway through a cycle the opposite
+  leg leads in a near-identical silhouette. `find_cycle` now finds the
+  step (the first dip in frame similarity, averaged over the clip), takes
+  the dip nearest twice that, and nudges start and length for the
+  tightest loop closure — the same rule as engine 0.21.1. It returns None
+  when no clear step shows, and the skill then says to pick by eye.
+- Jobs on engine 0.21.0 are now flagged: their one-shots are fine, but
+  walk and run loops should be re-checked with the snippet. Jobs on
+  0.21.1 or later are delivered as is.
+
 ## [1.4.0] - 2026-10-12
 
 ### Changed

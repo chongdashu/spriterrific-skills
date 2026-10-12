@@ -1,7 +1,7 @@
 ---
 name: spriterrific-api
 description: "Drive the hosted Spriterrific HTTP API from any agent or project: enqueue character/action sprite-generation jobs with CLI-equivalent parameters, create character variants (same character, new outfit or facing), poll job status, re-pick spritesheet frames (Studio frame-picker equivalent), download artifacts, and manage credits. Use when the user wants hosted/cloud sprite generation via API key instead of the local CLI."
-version: 1.4.0
+version: 1.4.1
 metadata:
   short-description: "Hosted Spriterrific generation via HTTP API."
 ---
@@ -57,7 +57,7 @@ the API pushes update hints back. On **every** request, send this skill's
 version (from the frontmatter above) as a header:
 
 ```bash
--H "X-Spriterrific-Skill-Version: 1.4.0"
+-H "X-Spriterrific-Skill-Version: 1.4.1"
 ```
 
 When your copy is older than the released skill, `GET /api/v1/me` and
@@ -293,7 +293,7 @@ action:
 ```bash
 BASE=${SPRITERRIFIC_API_BASE:-https://courteous-mouse-611.convex.site}
 AUTH="Authorization: Bearer $SPRITERRIFIC_API_KEY"
-SKILL="X-Spriterrific-Skill-Version: 1.4.0"
+SKILL="X-Spriterrific-Skill-Version: 1.4.1"
 
 # 1. Pre-flight: balance vs expected cost. If the response carries a
 #    "notice" field, relay it to the user (skill update available).
@@ -406,13 +406,17 @@ smoother than a sparse sample. Field case: a platformer hero's run went
 from 8 frames at 12 fps to 16 frames at 24 fps, and its walk from 8 at
 10 fps to 24 at 24 fps; the difference in game was large.
 
-- **Jobs with `engineVersion` 0.21.0 or later already do this.** Their
+- **Jobs with `engineVersion` 0.21.1 or later already do this.** Their
   automatic sheet (`v1`) holds every frame of one measured walk/run cycle,
   or the whole clip for jump, hurt, attack, and other one-shots, at the
   video's fps (12 when the clip doubles every frame). Check
   `<action>/manifest` (`frames`, `fps`) and deliver `v1` as is; re-pick
   only if the loop visibly hitches. Idle and talk stay at their classic
   counts, as do pixel-snapped (lobit) jobs.
+- **Engine 0.21.0 jobs** have dense sheets too, and their one-shots are
+  fine, but some walk/run loops are a single step (the leading leg swaps
+  at every loop) or a frame off. Re-check walk and run loops with the
+  recipe below and re-pick when it finds a different cycle.
 - **Older jobs (`engineVersion` below 0.21.0 or `null`)** have an 8-frame
   `v1` that skips frames: a walk keeps every 3rd frame of its cycle at
   10 fps, a run every 2nd frame at 12 fps. Unless the user chose lobit /
@@ -436,15 +440,17 @@ What to pick (frame names come from `GET …/frames`, in order; pick at most
 | `idle` | Keep `v1` unless the clip visibly moves; dense idle frames mostly repeat | — |
 
 Measure the cycle instead of trusting a typical length — it varies per
-video, and a wrong length makes the loop pop. The cycle length is the
-offset `k` where frame `start + k` looks most like frame `start`; pick
-frames `start` … `start + k - 1`. Search only full-cycle offsets (walk
-18–30, run 10–20): halfway through a walk the opposite leg leads and the
-silhouette matches almost as well, which would ship a half cycle.
+video (hosted walks have measured 18–31 frames, runs 13–22), and a wrong
+length makes the loop pop. A walk or run cycle is **two steps**, and
+halfway through it the opposite leg leads in a near-identical silhouette,
+so a "most similar frame" search often lands on one step and ships a loop
+where the legs swap every cycle. Find the step first — the first dip in
+frame similarity — then take the dip nearest twice that:
 
 ```python
 import io
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 
 from PIL import Image, ImageChops, ImageStat
 
@@ -455,22 +461,54 @@ def load_thumb(url: str) -> Image.Image:
     return Image.open(io.BytesIO(data)).convert("L").resize((64, 64))
 
 
-def cycle_length(urls: list[str], start: int, lo: int, hi: int) -> int:
-    """Return the offset in [lo, hi] whose frame best matches the frame at start."""
-    ref = load_thumb(urls[start])
+def distance(a: Image.Image, b: Image.Image) -> float:
+    """Mean pixel difference between two thumbnails."""
+    return ImageStat.Stat(ImageChops.difference(a, b)).mean[0]
 
-    def distance(k: int) -> float:
-        """Mean pixel difference between the start frame and frame start + k."""
-        return ImageStat.Stat(ImageChops.difference(ref, load_thumb(urls[start + k]))).mean[0]
 
-    return min(range(lo, min(hi, len(urls) - 1 - start) + 1), key=distance)
+def find_cycle(urls: list[str], start: int, typical: int) -> tuple[int, int] | None:
+    """Return (first_index, length) of one two-step loop cycle, or None if unclear.
+
+    typical is the usual cycle length: 24 for walk, 16 for run.
+    """
+    with ThreadPoolExecutor(8) as pool:
+        thumbs = list(pool.map(load_thumb, urls))
+    curve: dict[int, float] = {}
+    for k in range(1, round(typical * 1.6) + 1):
+        pairs = range(start, len(thumbs) - k)
+        if len(pairs) < 6:
+            break
+        curve[k] = sum(distance(thumbs[i], thumbs[i + k]) for i in pairs) / len(pairs)
+    dips = [
+        k for k in sorted(curve)
+        if k - 1 in curve and k + 1 in curve
+        and curve[k] <= min(curve[k - 1], curve[k + 1])
+        and curve[k] <= 0.85 * max(curve[j] for j in range(1, k))
+    ]
+    steps = [k for k in dips if 0.3 * typical <= k <= 0.75 * typical]
+    if not steps:
+        return None
+    cycles = [k for k in dips if 1.6 * steps[0] <= k <= 2.4 * steps[0]]
+    if not cycles:
+        return None
+    estimate = min(cycles, key=lambda k: abs(k - 2 * steps[0]))
+    options = [
+        (begin, length)
+        for length in range(estimate - 2, estimate + 3)
+        for begin in range(start, start + estimate // 2 + 1)
+        if begin + length < len(thumbs)
+    ]
+    return min(options, key=lambda o: distance(thumbs[o[0]], thumbs[o[0] + o[1]]))
 
 
 # frames = GET …/frames → payload["frames"] (each has "name" and "url")
 # start = round((len(frames) - 1) * 0.20)   # run; 0.08 for walk
-# k = cycle_length([f["url"] for f in frames], start, 10, 20)   # walk: 18, 30
-# pick = [f["name"] for f in frames[start : start + k]]
+# begin, length = find_cycle([f["url"] for f in frames], start, 16)   # walk: 24
+# pick = [f["name"] for f in frames[begin : begin + length]]
 ```
+
+If `find_cycle` returns None (no clear step, e.g. a near-static clip),
+inspect the contact sheet and pick one full two-step cycle by eye.
 
 Then POST the pick with `"fps": 24`, poll the pick job, activate the new
 version, re-fetch the job, and download. Open the new `<action>/preview`
