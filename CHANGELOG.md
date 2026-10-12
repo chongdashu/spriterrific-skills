@@ -11,6 +11,40 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-12
+
+### Changed
+
+- `spriterrific-api`: smooth animation is now the default for mixels. After
+  each action finishes, agents re-pick every frame of one cycle at 24 fps
+  (0 credits) and activate it, instead of delivering the automatic 8-frame
+  sheet, which keeps only every 2nd or 3rd frame of the 24 fps video. A new
+  "Smooth Animation" section gives per-action picks (walk and run cycles,
+  one-shots, idle), a tested snippet that measures each video's cycle length
+  from the dense-frame thumbnails, and the half-cycle trap to avoid. Lobit /
+  pixel-snap output and explicit requests for a limited-animation look keep
+  the 8–12 frame sheets.
+- `spriterrific-api`: the frame-picker tip that said to keep picks near 6–8
+  frames is replaced with guidance to take consecutive frames and end loops
+  one frame before the pose repeats.
+
+### Fixed
+
+- `spriterrific-api`: the Recommended Agent Loop example sent a stale
+  `X-Spriterrific-Skill-Version: 1.3.0` header.
+
+## [1.3.3] - 2026-10-12
+
+### Added
+
+- `spriterrific-api`: documents cached example runs. A user's first request
+  for the onboarding example prompt (the orange tabby in a red hoodie, walk
+  and/or idle, default options) is served from cache: the enqueue response
+  carries `"cached": true`, the debit is a flat 30 credits, and the job
+  finishes in about half a minute. Agents treat it like any other job and
+  tell the user why it was cheap and fast. `POST /api/v1/jobs` now returns
+  `{ jobId, credits, cached }`, and job objects carry `cached`.
+
 ## [1.3.2] - 2026-07-21
 
 ### Changed
