@@ -11,6 +11,22 @@ app.spriterrific.com download button — serves.
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-10-13
+
+### Added
+
+- **Agents offer a lo-fi version of dense animations, once per session.**
+  Dense 24 fps output became the default without notice, and a smooth
+  walk can clash with chunky pixel art, so when reporting a dense mixels
+  animation the agent now adds a single line offering a free 8-frame /
+  8 fps re-pick. It is an offer, not a question, and dense stays the
+  recommendation; lobit and pixel-snapped jobs, which already keep classic
+  counts, get no offer.
+- Smooth Animation spells out how to make it lo-fi: cut frames and fps by
+  the same factor (every 3rd frame at 8 fps, every 2nd at 12 fps), with an
+  anti-pattern for lowering fps alone, which only plays the animation in
+  slow motion. It also notes developers can do the same in their engine.
+
 ## [1.4.1] - 2026-10-12
 
 ### Fixed

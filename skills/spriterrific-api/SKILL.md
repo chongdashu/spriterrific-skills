@@ -1,7 +1,7 @@
 ---
 name: spriterrific-api
 description: "Drive the hosted Spriterrific HTTP API from any agent or project: enqueue character/action sprite-generation jobs with CLI-equivalent parameters, create character variants (same character, new outfit or facing), poll job status, re-pick spritesheet frames (Studio frame-picker equivalent), download artifacts, and manage credits. Use when the user wants hosted/cloud sprite generation via API key instead of the local CLI."
-version: 1.4.1
+version: 1.4.2
 metadata:
   short-description: "Hosted Spriterrific generation via HTTP API."
 ---
@@ -57,7 +57,7 @@ the API pushes update hints back. On **every** request, send this skill's
 version (from the frontmatter above) as a header:
 
 ```bash
--H "X-Spriterrific-Skill-Version: 1.4.1"
+-H "X-Spriterrific-Skill-Version: 1.4.2"
 ```
 
 When your copy is older than the released skill, `GET /api/v1/me` and
@@ -293,7 +293,7 @@ action:
 ```bash
 BASE=${SPRITERRIFIC_API_BASE:-https://courteous-mouse-611.convex.site}
 AUTH="Authorization: Bearer $SPRITERRIFIC_API_KEY"
-SKILL="X-Spriterrific-Skill-Version: 1.4.1"
+SKILL="X-Spriterrific-Skill-Version: 1.4.2"
 
 # 1. Pre-flight: balance vs expected cost. If the response carries a
 #    "notice" field, relay it to the user (skill update available).
@@ -320,6 +320,7 @@ curl -s -H "$AUTH" "$BASE/api/v1/jobs/$JOB_ID"
 
 # 5. Engine 0.21.0+ sheets already hold every frame at 24 fps. Re-pick only
 #    older jobs or a loop that hitches — see "Smooth Animation". 0 credits.
+#    When reporting a dense mixels animation, offer a lo-fi re-pick once.
 ```
 
 As soon as the enqueue returns a `jobId`, give the user the run's live page
@@ -424,9 +425,22 @@ from 8 frames at 12 fps to 16 frames at 24 fps, and its walk from 8 at
   pick with the recipe below and activate it (0 credits, about a minute
   per action). `v1` stays available; tell the user which version is active.
 
-To keep the limited-animation look on a new mixels job (8–12 frames suits
-chunky pixel art), re-pick evenly spaced frames from the same cycle at a
-lower fps.
+**Offer a lo-fi version once.** When you deliver a dense mixels animation
+(not lobit / pixel-snapped — those already keep classic counts), add one
+line to your report, once per session: for example, "The walk is 24
+frames at 24 fps; for a choppier retro feel I can re-pick it at 8 frames
+/ 8 fps for free, and the smooth version stays available." It is an
+offer, not a question: don't wait on an answer, and keep dense as the
+recommendation.
+
+To make an animation lo-fi, cut frames and fps by the same factor `N`:
+keep every `N`th frame of the same cycle (from `find_cycle` below, which
+matches the engine's cycle to within a frame) or of the one-shot range,
+and set `fps` to the dense fps ÷ `N` — every 3rd frame at 8 fps, or every
+2nd at 12 fps. Choose `N` so the cycle lands near 8–12 frames. Lowering
+`fps` alone just plays the same frames in slow motion. A developer can
+get the same look in their engine, without a re-pick, by playing every
+`N`th frame at fps ÷ `N`.
 
 What to pick (frame names come from `GET …/frames`, in order; pick at most
 64 frames, `fps` 1–60):
@@ -614,6 +628,11 @@ video's frames, so motion looks choppy. Better: re-pick every frame of one
 cycle at 24 fps (see "Smooth Animation") — free, and far smoother in game.
 Keep the 8–12 frame look only for lobit / pixel snap or when the user asks
 for it.
+
+**Anti-pattern: lowering `fps` to make a dense animation look lo-fi.**
+The same 24 frames at 8 fps play three times slower. Better: re-pick every
+3rd frame of the cycle at 8 fps (or every 2nd at 12 fps), so the frame
+count and fps drop together and the speed stays the same.
 
 **Anti-pattern: treating hosted output as snap-ready pixel art by default.**
 Better: hosted defaults are mixels (`high-fidelity-v1`, no snapping). Only
